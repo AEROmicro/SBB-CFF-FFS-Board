@@ -242,7 +242,7 @@
             const station = input.value || savedStation || 'Zürich HB';
             
             try {
-                const res = await fetch(`https://transport.opendata.ch/v1/stationboard?station=${station}&limit=12`);
+                const res = await fetch(`https://transport.opendata.ch/v1/stationboard?station=${station}&limit=15`);
                 const data = await res.json();
                 
                 document.getElementById('displayStation').innerText = data.station.name;
