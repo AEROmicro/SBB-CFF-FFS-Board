@@ -101,7 +101,6 @@
         .track-box { background: white; color: var(--sbb-blue); padding: 4px 12px; font-weight: 900; font-size: 1.4rem; border-radius: 2px; }
         .delay { color: #ff5555; margin-left: 8px; font-size: 1rem; }
 
-        /* Last Updated Info */
         .last-updated {
             padding: 10px 30px;
             font-size: 0.7rem;
@@ -110,7 +109,6 @@
             background: rgba(0,0,0,0.1);
         }
 
-        /* Search UI */
         .search-container {
             position: relative;
             margin-top: auto; 
@@ -118,7 +116,7 @@
             max-width: 600px;
             padding-bottom: 20px;
         }
-        .search-box { display: flex; gap: 10px; }
+        .search-box { display: flex; gap: 10px; align-items: center; }
         input { flex-grow: 1; padding: 12px; font-size: 1rem; border: none; border-radius: 2px; }
         
         #autocomplete-list { 
@@ -128,9 +126,29 @@
         }
         .autocomplete-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #eee; }
         .autocomplete-item:hover { background-color: #f0f0f0; }
-        button { padding: 10px 20px; background: var(--sbb-red); color: white; border: none; font-weight: bold; cursor: pointer; }
+        
+        .type-toggle {
+            background: #444;
+            border-radius: 2px;
+            display: flex;
+            overflow: hidden;
+            border: 1px solid #555;
+        }
+        .type-btn {
+            padding: 10px 15px;
+            border: none;
+            background: none;
+            color: white;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        .type-btn.active {
+            background: var(--sbb-red);
+        }
 
-        /* Footer Copyright */
+        button.update-btn { padding: 12px 20px; background: #eee; color: black; border: none; font-weight: bold; cursor: pointer; border-radius: 2px; }
+        
         .footer-copyright {
             text-align: center;
             font-size: 0.75rem;
@@ -161,8 +179,8 @@
         <table>
             <thead>
                 <tr>
-                    <th style="width: 15%;">Zeit</th>
-                    <th style="width: 70%;">Linie / Ziel</th>
+                    <th style="width: 15%;" id="th-time">Abfahrt</th>
+                    <th style="width: 70%;" id="th-dest">Linie / Ziel</th>
                     <th style="width: 15%; text-align: right;">Gleis</th>
                 </tr>
             </thead>
@@ -175,20 +193,28 @@
         <div id="autocomplete-list"></div>
         <div class="search-box">
             <input type="text" id="stationInput" placeholder="Suchen..." autocomplete="off">
-            <button onclick="fetchBoard()">Update</button>
+            
+            <div class="type-toggle">
+                <button class="type-btn active" id="btn-departure" onclick="setType('departure')">Dep</button>
+                <button class="type-btn" id="btn-arrival" onclick="setType('arrival')">Arr</button>
+            </div>
+
+            <button class="update-btn" onclick="fetchBoard()">Update</button>
         </div>
         <div class="footer-copyright">
             © ÆROforge 2026<br>
             All station data and SBB CFF FFS branding are used under official SBB CFF FFS copyright and trademark terms.<br>
-            Licended under the GNU GPLv3 license. This software is open source and provides zero warranty.
+            Licensed under the GNU GPLv3 license. This software is open source and provides zero warranty.
         </div>
     </div>
 
     <script>
+        let currentType = 'departure';
+
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('sw.js');
         }
-        // 1. CLOCK LOGIC
+
         const markersContainer = document.getElementById('markers');
         for (let i = 0; i < 60; i++) {
             const marker = document.createElement('div');
@@ -203,12 +229,10 @@
             const sec = now.getSeconds();
             const min = now.getMinutes();
             const hr = now.getHours();
-
             const totalMs = (sec * 1000) + ms;
             let secDeg = totalMs < 58500 ? (totalMs / 58500) * 360 : 0;
             const minDeg = min * 6;
             const hrDeg = (hr % 12 * 30) + (min * 0.5);
-
             document.getElementById('secHand').style.transform = `translateY(-28px) rotate(${secDeg}deg)`;
             document.getElementById('minHand').style.transform = `translateY(-37px) rotate(${minDeg}deg)`;
             document.getElementById('hourHand').style.transform = `translateY(-25px) rotate(${hrDeg}deg)`;
@@ -216,7 +240,15 @@
         }
         runClock();
 
-        // 2. AUTOCOMPLETE & REFRESH LOGIC
+        function setType(type) {
+            currentType = type;
+            document.getElementById('btn-departure').classList.toggle('active', type === 'departure');
+            document.getElementById('btn-arrival').classList.toggle('active', type === 'arrival');
+            document.getElementById('th-time').innerText = type === 'departure' ? 'Abfahrt' : 'Ankunft';
+            document.getElementById('th-dest').innerText = type === 'departure' ? 'Linie / Ziel' : 'Linie / Herkunft';
+            fetchBoard();
+        }
+
         const input = document.getElementById('stationInput');
         const list = document.getElementById('autocomplete-list');
         const updateDisplay = document.getElementById('updateTime');
@@ -242,7 +274,7 @@
             const station = input.value || savedStation || 'Zürich HB';
             
             try {
-                const res = await fetch(`https://transport.opendata.ch/v1/stationboard?station=${station}&limit=15`);
+                const res = await fetch(`https://transport.opendata.ch/v1/stationboard?station=${station}&limit=15&type=${currentType}`);
                 const data = await res.json();
                 
                 document.getElementById('displayStation').innerText = data.station.name;
@@ -252,26 +284,45 @@
                 let newRows = '';
 
                 data.stationboard.forEach(train => {
-                    const dep = new Date(train.stop.departure);
+                    const timeData = currentType === 'departure' ? train.stop.departure : train.stop.arrival;
+                    const dep = new Date(timeData);
                     const time = dep.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                     const delay = train.stop.delay ? `<span class="delay">+${train.stop.delay}′</span>` : '';
+                    
                     let lineClass = train.category === 'IR' ? 'line-IR' : (train.category === 'IC' ? 'line-IC' : 'line-S');
-                    const via = train.passList.slice(1, 4).map(p => p.station.name).join(' - ');
+                    
+                    let label = "";
+                    let viaText = "";
+
+                    if (currentType === 'departure') {
+                        label = train.to;
+                        // For departures, via is the next few stops
+                        viaText = 'via ' + train.passList.slice(1, 4).map(p => p.station.name).join(' - ');
+                    } else {
+                        // IMPROVED ARRIVAL LOGIC
+                        // 1. Origin is the first station in the passList
+                        label = train.passList[0]?.station.name || "SBB Zug";
+                        
+                        // 2. Via is the last few stops BEFORE arriving here
+                        // We slice from the end of the list, excluding the last stop (which is the current station)
+                        const totalStops = train.passList.length;
+                        const previousStops = train.passList.slice(Math.max(0, totalStops - 4), totalStops - 1);
+                        viaText = 'aus Richtung ' + previousStops.map(p => p.station.name).join(' - ');
+                    }
 
                     newRows += `
                         <tr>
                             <td class="time-cell">${time}${delay}</td>
                             <td class="dest-cell">
                                 <span class="line-badge ${lineClass}">${train.category}${train.number || ''}</span>
-                                ${train.to}
-                                <div class="via-text">via ${via}</div>
+                                ${label}
+                                <div class="via-text">${viaText}</div>
                             </td>
                             <td style="text-align: right;"><span class="track-box">${train.stop.platform || ''}</span></td>
                         </tr>`;
                 });
                 tbody.innerHTML = newRows;
                 
-                // Update the "Last Updated" timestamp
                 const now = new Date();
                 updateDisplay.innerText = `Zuletzt aktualisiert: ${now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})}`;
                 
@@ -281,10 +332,7 @@
             }
         }
 
-        // Auto-refresh every second
-        setInterval(fetchBoard, 1000);
-
-        // Initial fetch
+        setInterval(fetchBoard, 15000); 
         fetchBoard();
     </script>
 </body>
