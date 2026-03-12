@@ -291,24 +291,17 @@
                     
                     let lineClass = train.category === 'IR' ? 'line-IR' : (train.category === 'IC' ? 'line-IC' : 'line-S');
                     
+                    // FIXED: Arrival name logic
                     let label = "";
-                    let viaText = "";
-
                     if (currentType === 'departure') {
                         label = train.to;
-                        // For departures, via is the next few stops
-                        viaText = 'via ' + train.passList.slice(1, 4).map(p => p.station.name).join(' - ');
                     } else {
-                        // IMPROVED ARRIVAL LOGIC
-                        // 1. Origin is the first station in the passList
-                        label = train.passList[0]?.station.name || "SBB Zug";
-                        
-                        // 2. Via is the last few stops BEFORE arriving here
-                        // We slice from the end of the list, excluding the last stop (which is the current station)
-                        const totalStops = train.passList.length;
-                        const previousStops = train.passList.slice(Math.max(0, totalStops - 4), totalStops - 1);
-                        viaText = 'aus Richtung ' + previousStops.map(p => p.station.name).join(' - ');
+                        // Fallback: If split fails, take the very first station in the passList
+                        const parts = train.name.split(' from ');
+                        label = parts.length > 1 ? parts[1] : (train.passList[0]?.station.name || "Regionalzug");
                     }
+
+                    const via = train.passList.slice(1, 4).map(p => p.station.name).join(' - ');
 
                     newRows += `
                         <tr>
@@ -316,7 +309,7 @@
                             <td class="dest-cell">
                                 <span class="line-badge ${lineClass}">${train.category}${train.number || ''}</span>
                                 ${label}
-                                <div class="via-text">${viaText}</div>
+                                <div class="via-text">${currentType === 'departure' ? 'via ' + via : 'Aus Richtung ' + via}</div>
                             </td>
                             <td style="text-align: right;"><span class="track-box">${train.stop.platform || ''}</span></td>
                         </tr>`;
