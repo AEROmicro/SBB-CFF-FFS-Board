@@ -7,7 +7,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="image.png">
-    <title>SBB Live Board</title>
+    <title>SBB Departure Board</title>
     <link rel="icon" type="image/png" href="image.png">
     <style>
         :root {
@@ -52,8 +52,11 @@
         }
 
         .sbb-logo-text { background: var(--sbb-red); padding: 5px 12px; font-weight: 900; font-size: 1rem; margin-right: 15px; }
+        .station-container { display: flex; flex-direction: column; }
         .station-name { font-size: 2rem; font-weight: bold; }
+        .temp-header { font-size: 1rem; color: rgba(255,255,255,0.6); margin-top: 4px; }
 
+        /* --- CLOCK --- */
         .clock-face {
             width: var(--clock-size);
             height: var(--clock-size);
@@ -86,6 +89,7 @@
             background: var(--sbb-red); border-radius: 50%; transform: translate(-50%, -5px);
         }
 
+        /* --- TABLE --- */
         table { width: 100%; border-collapse: collapse; table-layout: fixed; }
         th { text-align: left; padding: 12px 30px; font-size: 0.8rem; color: rgba(255,255,255,0.4); text-transform: uppercase; }
         td { padding: 15px 30px; border-bottom: 1px solid rgba(255,255,255,0.05); white-space: nowrap; overflow: hidden; vertical-align: middle; }
@@ -109,6 +113,33 @@
             background: rgba(0,0,0,0.1);
         }
 
+        /* --- SETTINGS POPUP --- */
+        #settingsOverlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 2000; justify-content: center; align-items: center;
+        }
+        .settings-content {
+            background: #222; padding: 30px; border-radius: 8px; width: 90%; max-width: 400px; border: 1px solid #444;
+        }
+        .settings-content h2 { margin-top: 0; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        .setting-row { margin: 20px 0; display: flex; flex-direction: column; gap: 10px; }
+        .fav-list { background: #333; border-radius: 4px; padding: 5px; max-height: 150px; overflow-y: auto; }
+        .fav-item { 
+            padding: 8px; border-bottom: 1px solid #444; 
+            display: flex; justify-content: space-between; align-items: center;
+            transition: background 0.2s;
+        }
+        .fav-item:hover { background: rgba(235, 0, 0, 0.1); }
+        .fav-item span { cursor: pointer; flex-grow: 1; }
+        .fav-del { color: var(--sbb-red); font-weight: bold; padding: 0 10px; cursor: pointer; }
+        
+        .close-settings { 
+            background: #eee; color: black; border: none; padding: 10px; width: 100%; 
+            font-weight: bold; cursor: pointer; margin-top: 10px; transition: 0.2s;
+        }
+        .close-settings:hover { background: var(--sbb-red); color: white; }
+
+        /* --- SEARCH & BUTTONS --- */
         .search-container {
             position: relative;
             margin-top: auto; 
@@ -117,46 +148,30 @@
             padding-bottom: 20px;
         }
         .search-box { display: flex; gap: 10px; align-items: center; }
-        input { flex-grow: 1; padding: 12px; font-size: 1rem; border: none; border-radius: 2px; }
+        input { flex-grow: 1; padding: 12px; font-size: 1.1rem; border: none; border-radius: 2px; }
+        
+        button.update-btn, button.util-btn { 
+            padding: 12px 20px; background: #eee; color: black; border: none; 
+            font-weight: bold; cursor: pointer; border-radius: 2px; transition: 0.2s;
+        }
+        
+        /* HOVER EFFECT: BUTTONS TURN RED */
+        button.update-btn:hover, button.util-btn:hover {
+            background: var(--sbb-red);
+            color: white;
+        }
         
         #autocomplete-list { 
             position: absolute; bottom: 100%; left: 0; right: 0; 
             background: white; color: black; z-index: 1000; 
-            margin-bottom: 5px; border-radius: 2px;
+            margin-bottom: 5px; border-radius: 2px; overflow: hidden;
         }
-        .autocomplete-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #eee; }
-        .autocomplete-item:hover { background-color: #f0f0f0; }
+        .autocomplete-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #eee; transition: 0.2s; }
         
-        .type-toggle {
-            background: #444;
-            border-radius: 2px;
-            display: flex;
-            overflow: hidden;
-            border: 1px solid #555;
-        }
-        .type-btn {
-            padding: 10px 15px;
-            border: none;
-            background: none;
-            color: white;
-            cursor: pointer;
-            font-size: 0.8rem;
-            font-weight: bold;
-        }
-        .type-btn.active {
-            background: var(--sbb-red);
-        }
+        /* HOVER EFFECT: AUTOCOMPLETE ITEMS TURN RED */
+        .autocomplete-item:hover { background-color: var(--sbb-red); color: white; }
 
-        button.update-btn { padding: 12px 20px; background: #eee; color: black; border: none; font-weight: bold; cursor: pointer; border-radius: 2px; }
-        
-        .footer-copyright {
-            text-align: center;
-            font-size: 0.75rem;
-            color: rgba(255,255,255,0.3);
-            margin-top: 20px;
-            line-height: 1.6;
-            letter-spacing: 0.02em;
-        }
+        .copyright { text-align: center; font-size: 0.7rem; color: rgba(255,255,255,0.3); margin-top: 20px; line-height: 1.4; }
     </style>
 </head>
 <body>
@@ -165,9 +180,11 @@
         <div class="header">
             <div style="display:flex; align-items:center;">
                 <div class="sbb-logo-text">SBB CFF FFS</div>
-                <div class="station-name" id="displayStation">Zürich HB</div>
+                <div class="station-container">
+                    <div class="station-name" id="displayStation">Zürich HB</div>
+                    <div class="temp-header" id="tempDisplay">--°C</div>
+                </div>
             </div>
-            
             <div class="clock-face">
                 <div id="markers"></div>
                 <div class="hand hour-hand" id="hourHand"></div>
@@ -179,42 +196,63 @@
         <table>
             <thead>
                 <tr>
-                    <th style="width: 15%;" id="th-time">Abfahrt</th>
-                    <th style="width: 70%;" id="th-dest">Linie / Ziel</th>
+                    <th style="width: 15%;">Abfahrt</th>
+                    <th style="width: 70%;">Linie / Ziel</th>
                     <th style="width: 15%; text-align: right;">Gleis</th>
                 </tr>
             </thead>
             <tbody id="boardBody"></tbody>
         </table>
-        <div class="last-updated" id="updateTime">Wird geladen...</div>
+        <div class="last-updated" id="updateTime">Verbindung wird hergestellt...</div>
     </div>
 
     <div class="search-container">
         <div id="autocomplete-list"></div>
         <div class="search-box">
-            <input type="text" id="stationInput" placeholder="Suchen..." autocomplete="off">
-            
-            <div class="type-toggle">
-                <button class="type-btn active" id="btn-departure" onclick="setType('departure')">Dep</button>
-                <button class="type-btn" id="btn-arrival" onclick="setType('arrival')">Arr</button>
-            </div>
-
+            <input type="text" id="stationInput" placeholder="Bahnhof suchen..." autocomplete="off">
+            <button class="util-btn" onclick="toggleFavorite()">Save</button>
+            <button class="util-btn" onclick="openSettings()">Menu</button>
             <button class="update-btn" onclick="fetchBoard()">Update</button>
         </div>
-        <div class="footer-copyright">
+
+        <div class="copyright">
             © ÆROforge 2026<br>
-            All station data and SBB CFF FFS branding are used under official SBB CFF FFS copyright and trademark terms.<br>
-            Licensed under the GNU GPLv3 license. This software is open source and provides zero warranty.
+            All station data and SBB branding used under official terms.<br>
+            Licensed under GNU GPLv3.
+        </div>
+    </div>
+
+    <div id="settingsOverlay">
+        <div class="settings-content">
+            <h2>Settings</h2>
+            <div class="setting-row">
+                <label>Unit:</label>
+                <div style="display:flex; gap:10px;">
+                    <button class="util-btn" style="flex:1" onclick="setTempUnit('C')">Celsius</button>
+                    <button class="util-btn" style="flex:1" onclick="setTempUnit('F')">Fahrenheit</button>
+                </div>
+            </div>
+            <div class="setting-row">
+                <label>Time Zone:</label>
+                <div style="display:flex; gap:10px;">
+                    <button class="util-btn" style="flex:1" onclick="setTimeZone('local')">Local</button>
+                    <button class="util-btn" style="flex:1" onclick="setTimeZone('Europe/Zurich')">Swiss</button>
+                </div>
+            </div>
+            <div class="setting-row">
+                <label>Favorites:</label>
+                <div class="fav-list" id="favListContainer"></div>
+            </div>
+            <button class="close-settings" onclick="closeSettings()">Close</button>
         </div>
     </div>
 
     <script>
-        let currentType = 'departure';
+        let currentTempC = 0;
+        let unit = localStorage.getItem('tempUnit') || 'C';
+        let timeZone = localStorage.getItem('timeZone') || 'local';
 
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js');
-        }
-
+        // SBB Clock Logic
         const markersContainer = document.getElementById('markers');
         for (let i = 0; i < 60; i++) {
             const marker = document.createElement('div');
@@ -224,29 +262,90 @@
         }
 
         function runClock() {
-            const now = new Date();
+            let now = new Date();
+            
+            if (timeZone !== 'local') {
+                now = new Date(new Date().toLocaleString("en-US", {timeZone: "Europe/Zurich"}));
+            }
+
             const ms = now.getMilliseconds();
             const sec = now.getSeconds();
             const min = now.getMinutes();
             const hr = now.getHours();
-            const totalMs = (sec * 1000) + ms;
-            let secDeg = totalMs < 58500 ? (totalMs / 58500) * 360 : 0;
-            const minDeg = min * 6;
-            const hrDeg = (hr % 12 * 30) + (min * 0.5);
-            document.getElementById('secHand').style.transform = `translateY(-28px) rotate(${secDeg}deg)`;
-            document.getElementById('minHand').style.transform = `translateY(-37px) rotate(${minDeg}deg)`;
-            document.getElementById('hourHand').style.transform = `translateY(-25px) rotate(${hrDeg}deg)`;
+
+            // SMOOTH GLIDE LOGIC
+            // Second hand: total milliseconds into the minute divided by 60,000 * 360 degrees
+            const secondSmooth = ((sec * 1000) + ms) / 60000 * 360;
+            // Minute hand: minutes + seconds/60
+            const minuteSmooth = (min * 6) + (sec / 10);
+            // Hour hand: hours + minutes/60
+            const hourSmooth = (hr % 12 * 30) + (min * 0.5);
+
+            document.getElementById('secHand').style.transform = `translateY(-28px) rotate(${secondSmooth}deg)`;
+            document.getElementById('minHand').style.transform = `translateY(-37px) rotate(${minuteSmooth}deg)`;
+            document.getElementById('hourHand').style.transform = `translateY(-25px) rotate(${hourSmooth}deg)`;
+            
             requestAnimationFrame(runClock);
         }
         runClock();
 
-        function setType(type) {
-            currentType = type;
-            document.getElementById('btn-departure').classList.toggle('active', type === 'departure');
-            document.getElementById('btn-arrival').classList.toggle('active', type === 'arrival');
-            document.getElementById('th-time').innerText = type === 'departure' ? 'Abfahrt' : 'Ankunft';
-            document.getElementById('th-dest').innerText = type === 'departure' ? 'Linie / Ziel' : 'Linie / Herkunft';
-            fetchBoard();
+        function openSettings() { 
+            document.getElementById('settingsOverlay').style.display = 'flex'; 
+            renderFavorites();
+        }
+        function closeSettings() { document.getElementById('settingsOverlay').style.display = 'none'; }
+
+        function setTempUnit(u) {
+            unit = u;
+            localStorage.setItem('tempUnit', u);
+            updateTempDisplay();
+        }
+
+        function setTimeZone(tz) {
+            timeZone = tz;
+            localStorage.setItem('timeZone', tz);
+            fetchBoard(); 
+        }
+
+        function toggleFavorite() {
+            let favs = JSON.parse(localStorage.getItem('favStations') || '[]');
+            const current = document.getElementById('displayStation').innerText;
+            if (!favs.includes(current)) {
+                favs.push(current);
+                localStorage.setItem('favStations', JSON.stringify(favs));
+                alert(current + " saved");
+            }
+        }
+
+        function removeFavorite(name) {
+            let favs = JSON.parse(localStorage.getItem('favStations') || '[]');
+            favs = favs.filter(f => f !== name);
+            localStorage.setItem('favStations', JSON.stringify(favs));
+            renderFavorites();
+        }
+
+        function renderFavorites() {
+            let favs = JSON.parse(localStorage.getItem('favStations') || '[]');
+            const container = document.getElementById('favListContainer');
+            container.innerHTML = favs.length ? favs.map(f => `
+                <div class="fav-item">
+                    <span onclick="selectStation('${f}'); closeSettings();">${f}</span>
+                    <div class="fav-del" onclick="removeFavorite('${f}')">x</div>
+                </div>`).join('') : '<div style="padding:10px">No favorites saved</div>';
+        }
+
+        async function fetchWeather(lat, lon) {
+            try {
+                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`);
+                const data = await res.json();
+                currentTempC = data.current_weather.temperature;
+                updateTempDisplay();
+            } catch(e) {}
+        }
+
+        function updateTempDisplay() {
+            let displayTemp = unit === 'F' ? (currentTempC * 9/5) + 32 : currentTempC;
+            document.getElementById('tempDisplay').innerText = `${displayTemp.toFixed(1)}°${unit}`;
         }
 
         const input = document.getElementById('stationInput');
@@ -256,11 +355,13 @@
         input.addEventListener('input', async () => {
             const val = input.value;
             if (val.length < 2) { list.innerHTML = ''; return; }
-            const res = await fetch(`https://transport.opendata.ch/v1/locations?query=${val}`);
-            const data = await res.json();
-            list.innerHTML = data.stations.slice(0, 5).map(s => 
-                `<div class="autocomplete-item" onclick="selectStation('${s.name}')">${s.name}</div>`
-            ).join('');
+            try {
+                const res = await fetch(`https://transport.opendata.ch/v1/locations?query=${encodeURIComponent(val)}`);
+                const data = await res.json();
+                list.innerHTML = (data.stations || []).slice(0, 5).map(s => 
+                    `<div class="autocomplete-item" onclick="selectStation('${s.name}')">${s.name}</div>`
+                ).join('');
+            } catch(e) {}
         });
 
         function selectStation(name) {
@@ -271,47 +372,67 @@
 
         async function fetchBoard() {
             const savedStation = localStorage.getItem('lastStation');
-            const station = input.value || savedStation || 'Zürich HB';
+            const stationQuery = input.value || savedStation || 'Zürich HB';
             
             try {
-                const res = await fetch(`https://transport.opendata.ch/v1/stationboard?station=${station}&limit=15&type=${currentType}`);
+                const res = await fetch(`https://transport.opendata.ch/v1/stationboard?station=${encodeURIComponent(stationQuery)}&limit=15&type=departure`);
                 const data = await res.json();
                 
-                document.getElementById('displayStation').innerText = data.station.name;
-                localStorage.setItem('lastStation', data.station.name);
+                if (data.station) {
+                    document.getElementById('displayStation').innerText = data.station.name;
+                    localStorage.setItem('lastStation', data.station.name);
+                    if(data.station.coordinate) fetchWeather(data.station.coordinate.x, data.station.coordinate.y);
+                }
 
                 const tbody = document.getElementById('boardBody');
                 let newRows = '';
 
+                if (!data.stationboard || data.stationboard.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 40px;">Keine Abfahrten gefunden</td></tr>';
+                    return;
+                }
+
                 data.stationboard.forEach(train => {
-                    const timeData = currentType === 'departure' ? train.stop.departure : train.stop.arrival;
-                    const dep = new Date(timeData);
-                    const time = dep.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    const delay = train.stop.delay ? `<span class="delay">+${train.stop.delay}′</span>` : '';
-                    
-                    let lineClass = train.category === 'IR' ? 'line-IR' : (train.category === 'IC' ? 'line-IC' : 'line-S');
-                    
-                    // FIXED: Arrival name logic
-                    let label = "";
-                    if (currentType === 'departure') {
-                        label = train.to;
+                    const stop = train.stop || {};
+                    if (!stop.departure) return;
+
+                    let depTime = new Date(stop.departure);
+                    let timeStr = "";
+
+                    if (timeZone === 'local') {
+                        timeStr = depTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                     } else {
-                        // Fallback: If split fails, take the very first station in the passList
-                        const parts = train.name.split(' from ');
-                        label = parts.length > 1 ? parts[1] : (train.passList[0]?.station.name || "Regionalzug");
+                        timeStr = depTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Zurich' });
+                    }
+                    
+                    const delayStr = stop.delay ? `<span class="delay">+${stop.delay}′</span>` : '';
+                    const cat = train.category || "";
+                    const num = train.number || "";
+                    const badge = (cat + num) || "Zug";
+                    
+                    let dest = train.to;
+                    if (!dest || dest === "null") {
+                        dest = (train.passList && train.passList.length > 0) 
+                               ? train.passList[train.passList.length - 1].station.name 
+                               : badge;
                     }
 
-                    const via = train.passList.slice(1, 4).map(p => p.station.name).join(' - ');
+                    const viaList = (train.passList || []).slice(1, 4)
+                        .map(p => p.station.name)
+                        .filter(n => n && n !== dest);
+                    const viaText = viaList.length > 0 ? 'via ' + viaList.join(' - ') : '';
+
+                    let lineClass = cat === 'IR' ? 'line-IR' : (cat === 'IC' ? 'line-IC' : 'line-S');
 
                     newRows += `
                         <tr>
-                            <td class="time-cell">${time}${delay}</td>
+                            <td class="time-cell">${timeStr}${delayStr}</td>
                             <td class="dest-cell">
-                                <span class="line-badge ${lineClass}">${train.category}${train.number || ''}</span>
-                                ${label}
-                                <div class="via-text">${currentType === 'departure' ? 'via ' + via : 'Aus Richtung ' + via}</div>
+                                <span class="line-badge ${lineClass}">${badge}</span>
+                                ${dest}
+                                <div class="via-text">${viaText}</div>
                             </td>
-                            <td style="text-align: right;"><span class="track-box">${train.stop.platform || ''}</span></td>
+                            <td style="text-align: right;"><span class="track-box">${stop.platform || ''}</span></td>
                         </tr>`;
                 });
                 tbody.innerHTML = newRows;
@@ -320,12 +441,11 @@
                 updateDisplay.innerText = `Zuletzt aktualisiert: ${now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})}`;
                 
             } catch (e) { 
-                console.error("Refresh failed:", e);
-                updateDisplay.innerText = "Verbindungsfehler - Versuche es erneut...";
+                updateDisplay.innerText = "Verbindungsfehler...";
             }
         }
 
-        setInterval(fetchBoard, 15000); 
+        setInterval(fetchBoard, 10000); 
         fetchBoard();
     </script>
 </body>
