@@ -167,7 +167,6 @@ async function fetchBoard() {
         tbody.innerHTML = newRows;
         document.getElementById('updateTime').innerText = `Zuletzt aktualisiert: ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})}`;
         
-        if (routePolyline) map.removeLayer(routePolyline);
     } catch (e) { document.getElementById('updateTime').innerText = "Verbindungsfehler..."; }
 }
 
@@ -251,12 +250,6 @@ window.showTrainDetails = function(index) {
     
     document.getElementById('modalTrainStatus').innerHTML = statusHTML || '<div style="color:#aaa">Pünktlich</div>';
 
-    // Map logic
-    if (routePolyline) map.removeLayer(routePolyline);
-    if (mapCoords.length > 1) {
-        routePolyline = L.polyline(mapCoords, {color: '#eb0000', weight: 4, opacity: 0.8}).addTo(map);
-        map.fitBounds(routePolyline.getBounds(), {padding: [20, 20]});
-    }
 
     document.getElementById('trainDetailsModal').style.display = 'flex';
 };
