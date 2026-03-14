@@ -219,3 +219,8 @@ window.showTrainDetails = function(index) {
 
 document.addEventListener('DOMContentLoaded', () => { initMap(); runClock(); fetchBoard(); document.getElementById('entryInput').value = maxEntries; });
 setInterval(fetchBoard, 30000); setInterval(fetchWeather, 600000);
+
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js')
+      .then(() => console.log("Service Worker Registered"));
+}
