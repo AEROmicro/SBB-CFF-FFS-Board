@@ -26,7 +26,6 @@ body {
 }
 
 #map { height: 250px; width: 100%; border-bottom: 2px solid rgba(255,255,255,0.1); background: #1a1a1a; }
-.leaflet-container { font-family: inherit; }
 
 .sbb-logo-text { background: var(--sbb-red); padding: 5px 12px; font-weight: 900; font-size: 1rem; margin-right: 15px; }
 .station-container { display: flex; flex-direction: column; }
@@ -49,7 +48,6 @@ body {
 table { width: 100%; border-collapse: collapse; table-layout: fixed; }
 th { text-align: left; padding: 12px 30px; font-size: 0.8rem; color: rgba(255,255,255,0.4); text-transform: uppercase; }
 td { padding: 15px 30px; border-bottom: 1px solid rgba(255,255,255,0.05); white-space: nowrap; overflow: hidden; vertical-align: middle; }
-
 #boardBody tr { cursor: pointer; transition: background 0.2s; }
 #boardBody tr:hover { background: rgba(255,255,255,0.1); }
 
@@ -61,21 +59,11 @@ a:hover, a:active { color: #eb0000; }
 .line-IR { background: var(--sbb-red); color: white; }
 .line-IC { background: white; color: var(--sbb-red); border: 2px solid var(--sbb-red); }
 .line-S { background: white; color: var(--sbb-blue); border: 1.5px solid var(--sbb-blue); }
-
 .dest-cell { font-size: 1.6rem; font-weight: bold; }
 .via-text { font-size: 0.85rem; color: rgba(255,255,255,0.6); margin-top: 2px; }
 .track-box { background: white; color: var(--sbb-blue); padding: 4px 12px; font-weight: 900; font-size: 1.4rem; border-radius: 2px; }
 .delay { color: #ff5555; margin-left: 8px; font-size: 1rem; }
 .last-updated { padding: 10px 30px; font-size: 0.7rem; color: rgba(255,255,255,0.4); text-align: right; background: rgba(0,0,0,0.1); }
-
-/* --- SETTINGS POPUP --- */
-#settingsOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: center; align-items: center; }
-.settings-content { background: #222; padding: 30px; border-radius: 8px; width: 90%; max-width: 400px; border: 1px solid #444; }
-.setting-row { margin: 20px 0; display: flex; flex-direction: column; gap: 10px; }
-.fav-list { background: #333; border-radius: 4px; padding: 5px; max-height: 150px; overflow-y: auto; }
-.fav-item { padding: 8px; border-bottom: 1px solid #444; display: flex; justify-content: space-between; align-items: center; transition: background 0.2s; }
-.fav-item:hover { background: rgba(235, 0, 0, 0.1); }
-.fav-del { color: var(--sbb-red); font-weight: bold; padding: 0 10px; cursor: pointer; }
 
 /* --- SEARCH & BUTTONS --- */
 .search-container { position: relative; margin-top: auto; width: 100%; max-width: 600px; padding-bottom: 20px; }
@@ -83,30 +71,93 @@ a:hover, a:active { color: #eb0000; }
 input { flex-grow: 1; padding: 12px; font-size: 1.1rem; border: none; border-radius: 2px; }
 button.update-btn, button.util-btn { padding: 12px 20px; background: #eee; color: black; border: none; font-weight: bold; cursor: pointer; border-radius: 2px; transition: 0.2s; }
 button.update-btn:hover, button.util-btn:hover { background: var(--sbb-red); color: white; }
+.btn-active { background: var(--sbb-red) !important; color: white !important; }
 #autocomplete-list { position: absolute; bottom: 100%; left: 0; right: 0; background: white; color: black; z-index: 1000; margin-bottom: 5px; border-radius: 2px; overflow: hidden; }
 .autocomplete-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #eee; transition: 0.2s; }
 .autocomplete-item:hover { background-color: var(--sbb-red); color: white; }
 .copyright { text-align: center; font-size: 0.7rem; color: rgba(255,255,255,0.3); margin-top: 20px; line-height: 1.4; }
 
-/* --- TRAIN DETAILS MODAL WITH TIMELINE --- */
+/* --- SETTINGS POPUP --- */
+#settingsOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 2000; justify-content: center; align-items: center; }
+.settings-content { background: #222; padding: 30px; border-radius: 8px; width: 90%; max-width: 400px; border: 1px solid #444; }
+.setting-row { margin: 20px 0; display: flex; flex-direction: column; gap: 10px; }
+.fav-list { background: #333; border-radius: 4px; padding: 5px; max-height: 150px; overflow-y: auto; }
+.fav-item { padding: 8px; border-bottom: 1px solid #444; display: flex; justify-content: space-between; align-items: center; }
+.fav-del { color: var(--sbb-red); font-weight: bold; padding: 0 10px; cursor: pointer; }
+
+/* --- SBB MODAL & HORIZONTAL TIMELINE --- */
 .overlay-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 3000; justify-content: center; align-items: center; }
-.modal-content-details { background: #222; color: white; width: 90%; max-width: 500px; padding: 25px; border-radius: 8px; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+.modal-content-details { background: #222; color: white; width: 95%; max-width: 900px; padding: 25px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
 .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #444; padding-bottom: 10px; margin-bottom: 15px; }
 .modal-header h2 { margin: 0; color: var(--sbb-white); font-size: 1.5rem; }
 .close-btn { font-size: 2rem; cursor: pointer; color: var(--sbb-red); line-height: 1; margin-left: 15px; }
 .modal-status { margin-bottom: 15px; font-size: 0.95rem; background: #333; padding: 10px; border-radius: 4px; }
 .text-red { color: #ff5555; font-weight: bold; }
 
-/* The Timeline Visuals */
-.route-list { position: relative; padding-left: 20px; margin-top: 15px; border-left: 4px solid var(--sbb-blue); margin-left: 10px; }
-.route-step { position: relative; display: flex; align-items: center; padding: 15px 10px; border-bottom: 1px solid #333; }
-.route-step::before {
-    content: ''; position: absolute; left: -28px; top: 50%; transform: translateY(-50%);
-    width: 12px; height: 12px; background: white; border: 3px solid var(--sbb-blue); border-radius: 50%; z-index: 2;
+.route-list-wrapper {
+    display: flex; overflow-x: auto; padding: 20px 20px 180px 20px; position: relative;
+    scrollbar-width: thin; scrollbar-color: var(--sbb-red) #333;
 }
-.current-station-highlight { background: rgba(255,255,255,0.05); border-radius: 4px; }
-.current-station-highlight::before { border-color: var(--sbb-red); background: var(--sbb-red); width: 16px; height: 16px; left: -30px; box-shadow: 0 0 10px var(--sbb-red); }
+.route-list-wrapper::-webkit-scrollbar { height: 8px; }
+.route-list-wrapper::-webkit-scrollbar-thumb { background: var(--sbb-red); border-radius: 4px; }
 
-.route-time { width: 70px; font-weight: bold; font-size: 1.1rem; }
-.route-station { flex: 1; font-size: 1.1rem; font-weight: bold; }
-.route-plat { width: 60px; text-align: right; color: #aaa; font-weight: bold; }
+.route-list-wrapper {
+    display: flex; 
+    overflow-x: auto; 
+    overflow-y: hidden;
+    padding: 20px 20px 180px 20px; 
+    position: relative;
+    scrollbar-width: thin; 
+    scrollbar-color: var(--sbb-red) #333;
+    
+    /* NEW: This creates the line as a background that only stretches as far as the content */
+    background-image: linear-gradient(var(--sbb-blue), var(--sbb-blue));
+    background-repeat: no-repeat;
+    background-size: 100% 5px; /* 100% width of the scrollable content, 5px height */
+    background-position: 0 75px; /* Aligned with the dots */
+}
+
+
+.horiz-step {
+    display: flex; flex-direction: column; align-items: center; min-width: 120px; position: relative; z-index: 2;
+}
+
+.horiz-time { font-weight: bold; font-size: 1rem; height: 40px; text-align: center; }
+.horiz-delay { font-size: 0.75rem; color: #ff5555; display: block; }
+
+/* The dot on the line */
+.horiz-node {
+    width: 14px; height: 14px; background: white; border: 3px solid var(--sbb-blue); border-radius: 50%;
+    margin-top: 5px; margin-bottom: 15px;
+}
+.horiz-step.current-stop .horiz-node {
+    background: var(--sbb-red); border-color: var(--sbb-red); box-shadow: 0 0 10px var(--sbb-red); 
+    width: 18px; height: 18px; margin-top: 3px; margin-bottom: 13px;
+}
+
+.horiz-station {
+    position: absolute; 
+    top: 75px; 
+    left: 55%; /* Moved slightly right from the center of the node */
+    transform: rotate(45deg); 
+    transform-origin: top left;
+    white-space: nowrap; 
+    font-size: 1.05rem; 
+    font-weight: bold; 
+    width: 300px;
+    text-align: left;
+}
+
+.horiz-plat {
+    position: absolute; 
+    top: 115px; 
+    left: 55%; /* Matching the station text nudge */
+    transform: rotate(45deg); 
+    transform-origin: top left;
+    white-space: nowrap; 
+    font-size: 0.85rem; 
+    color: #aaa; 
+    font-weight: bold;
+    width: 300px;
+    text-align: left;
+}
