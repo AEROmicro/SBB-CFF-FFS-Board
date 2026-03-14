@@ -46,6 +46,7 @@ A high-fidelity, real-time Swiss Railway (SBB) departure board. This web applica
 ## License (The fun legal stuff)
 
 Distributed under the **GNU GPLv3 License**. See `LICENSE` for more information.
+* *WARNING:* all software that uses part or all of this program must distriube under the same licence. Failure to do so can result in legal consquences. This software also provides *ZERO* warranty of any kind. Any events that occur due to this software are not at fault at AEROmicro (ÆROxol) or anyone who developed this project. Sole responiabilty for proper and legal use of this software are carried by the user. 
 
 ---
 Developed by **ÆROforge 2026**.  
