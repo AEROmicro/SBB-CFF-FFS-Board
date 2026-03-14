@@ -87,36 +87,38 @@ button.update-btn:hover, button.util-btn:hover { background: var(--sbb-red); col
 
 /* --- SBB MODAL & HORIZONTAL TIMELINE --- */
 .overlay-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 3000; justify-content: center; align-items: center; }
-.modal-content-details { background: #222; color: white; width: 95%; max-width: 900px; padding: 25px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+.modal-content-details { background: #222; color: white; width: 95%; max-width: 1000px; padding: 30px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); max-height: 85vh; overflow-y: hidden; overflow-x: hidden; display: flex; flex-direction: column; }
 .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #444; padding-bottom: 10px; margin-bottom: 15px; }
 .modal-header h2 { margin: 0; color: var(--sbb-white); font-size: 1.5rem; }
-.close-btn { font-size: 2rem; cursor: pointer; color: var(--sbb-red); line-height: 1; margin-left: 15px; }
+
 .modal-status { margin-bottom: 15px; font-size: 0.95rem; background: #333; padding: 10px; border-radius: 4px; }
 .text-red { color: #ff5555; font-weight: bold; }
 
-.route-list-wrapper {
-    display: flex; overflow-x: auto; padding: 20px 20px 180px 20px; position: relative;
-    scrollbar-width: thin; scrollbar-color: var(--sbb-red) #333;
-}
-.route-list-wrapper::-webkit-scrollbar { height: 8px; }
-.route-list-wrapper::-webkit-scrollbar-thumb { background: var(--sbb-red); border-radius: 4px; }
-
+/* FIXED ROUTE WRAPPER AND LINE */
 .route-list-wrapper {
     display: flex; 
     overflow-x: auto; 
-    overflow-y: hidden;
+    overflow-y: hidden; /* Strict horizontal lock */
     padding: 20px 20px 180px 20px; 
     position: relative;
     scrollbar-width: thin; 
     scrollbar-color: var(--sbb-red) #333;
-    
-    /* NEW: This creates the line as a background that only stretches as far as the content */
-    background-image: linear-gradient(var(--sbb-blue), var(--sbb-blue));
-    background-repeat: no-repeat;
-    background-size: 100% 5px; /* 100% width of the scrollable content, 5px height */
-    background-position: 0 75px; /* Aligned with the dots */
+    flex-grow: 1;
 }
+.route-list-wrapper::-webkit-scrollbar { height: 8px; }
+.route-list-wrapper::-webkit-scrollbar-thumb { background: var(--sbb-red); border-radius: 4px; }
 
+/* The Blue Connecting Line */
+.route-list-wrapper::before {
+    content: ''; 
+    position: absolute;
+    top: 72px; /* Aligns perfectly behind the dots */
+    left: 0; 
+    right: 0;
+    height: 6px; 
+    background: var(--sbb-blue);
+    z-index: 1;
+}
 
 .horiz-step {
     display: flex; flex-direction: column; align-items: center; min-width: 120px; position: relative; z-index: 2;
@@ -125,14 +127,17 @@ button.update-btn:hover, button.util-btn:hover { background: var(--sbb-red); col
 .horiz-time { font-weight: bold; font-size: 1rem; height: 40px; text-align: center; }
 .horiz-delay { font-size: 0.75rem; color: #ff5555; display: block; }
 
-/* The dot on the line */
+/* The dot on the line (FIXED TO STAY A CIRCLE) */
 .horiz-node {
     width: 14px; height: 14px; background: white; border: 3px solid var(--sbb-blue); border-radius: 50%;
     margin-top: 5px; margin-bottom: 15px;
+    flex-shrink: 0; /* CRITICAL: Stops the circle from squishing into an oval */
+    z-index: 3; /* Keeps it above the line */
 }
 .horiz-step.current-stop .horiz-node {
     background: var(--sbb-red); border-color: var(--sbb-red); box-shadow: 0 0 10px var(--sbb-red); 
     width: 18px; height: 18px; margin-top: 3px; margin-bottom: 13px;
+    flex-shrink: 0;
 }
 
 .horiz-station {
@@ -168,25 +173,6 @@ button.update-btn:hover, button.util-btn:hover { background: var(--sbb-red); col
     align-items: center;
     gap: 15px;
     margin: 0;
-}
-
-/* Lock vertical scrolling in the details menu */
-.modal-content-details {
-    max-height: 85vh;
-    overflow-y: hidden; /* No vertical scroll */
-    overflow-x: hidden;
-    display: flex;
-    flex-direction: column;
-}
-
-/* Ensure the timeline area scrolls horizontally only */
-.route-list-wrapper {
-    display: flex;
-    overflow-x: auto;
-    overflow-y: hidden; /* Strict horizontal lock */
-    padding: 20px 20px 180px 20px;
-    position: relative;
-    flex-grow: 1;
 }
 
 /* Custom Settings Close Button (Non-default) */
@@ -239,13 +225,6 @@ button.update-btn:hover, button.util-btn:hover { background: var(--sbb-red); col
 #modalTrainName span:last-child {
     font-size: 1.8rem; /* Makes the "→ Destination" text larger to match */
     font-weight: bold;
-}
-
-/* Modal Content Adjustment */
-.modal-content-details {
-    width: 95%;
-    max-width: 1000px; /* Slightly wider modal for better layout */
-    padding: 30px;
 }
 
 #modalTrainStatus {
