@@ -4,8 +4,10 @@ let unit = localStorage.getItem('tempUnit') || 'C';
 let timeZone = localStorage.getItem('timeZone') || 'local';
 let use12h = localStorage.getItem('use12h') === 'true';
 let maxEntries = parseInt(localStorage.getItem('maxEntries')) || 15;
+let notifsEnabled = localStorage.getItem('notifsEnabled') === 'true';
 let currentCoords = { lat: 47.378177, lon: 8.540192 };
-let map, marker, routePolyline; // routePolyline added to draw the map line!
+let map, marker, routePolyline; 
+let notifiedTrains = new Set(); // Prevent spamming notifications
 
 function initMap() {
     map = L.map('map', { zoomControl: false, attributionControl: false }).setView([currentCoords.lat, currentCoords.lon], 13);
@@ -37,13 +39,47 @@ function runClock() {
     requestAnimationFrame(runClock);
 }
 
-function openSettings() { document.getElementById('settingsOverlay').style.display = 'flex'; renderFavorites(); }
+// UI Settings
+function openSettings() { 
+    document.getElementById('settingsOverlay').style.display = 'flex'; 
+    renderFavorites(); 
+    updateNotifButtons();
+}
 function closeSettings() { document.getElementById('settingsOverlay').style.display = 'none'; }
 function setTempUnit(u) { unit = u; localStorage.setItem('tempUnit', u); updateTempDisplay(); }
 function setTimeFormat(is12h) { use12h = is12h; localStorage.setItem('use12h', is12h); fetchBoard(); }
 function updateEntryCount(val) { maxEntries = parseInt(val) || 15; localStorage.setItem('maxEntries', maxEntries); fetchBoard(); }
 function setTimeZone(tz) { timeZone = tz; localStorage.setItem('timeZone', tz); fetchBoard(); }
 
+// Push Notifications Control
+function setNotifications(isOn) {
+    if (isOn) {
+        if (!("Notification" in window)) {
+            alert("This browser does not support desktop notification");
+            return;
+        }
+        Notification.requestPermission().then(permission => {
+            if (permission === "granted") {
+                notifsEnabled = true;
+                localStorage.setItem('notifsEnabled', 'true');
+                updateNotifButtons();
+            } else {
+                alert("Please allow notifications in your browser settings first.");
+            }
+        });
+    } else {
+        notifsEnabled = false;
+        localStorage.setItem('notifsEnabled', 'false');
+        updateNotifButtons();
+    }
+}
+
+function updateNotifButtons() {
+    document.getElementById('notifBtnOn').classList.toggle('btn-active', notifsEnabled);
+    document.getElementById('notifBtnOff').classList.toggle('btn-active', !notifsEnabled);
+}
+
+// Favorites Logic
 function toggleFavorite() {
     let favs = JSON.parse(localStorage.getItem('favStations') || '[]');
     const current = document.getElementById('displayStation').innerText;
@@ -116,8 +152,7 @@ async function fetchBoard() {
             let depTime = new Date(train.stop.departure);
             let timeStr = depTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: use12h, timeZone: timeZone !== 'local' ? 'Europe/Zurich' : undefined });
             
-            const badge = (train.category + train.number) || "Zug";
-            let dest = train.to || badge;
+            const badge = (train.category + (train.number !== null ? train.number : "")) || "Zug";            let dest = train.to || badge;
             const viaList = (train.passList || []).slice(1, 4).map(p => p.station.name).filter(n => n && n !== dest);
             const lineClass = train.category === 'IR' ? 'line-IR' : (train.category === 'IC' ? 'line-IC' : 'line-S');
 
@@ -131,12 +166,11 @@ async function fetchBoard() {
         tbody.innerHTML = newRows;
         document.getElementById('updateTime').innerText = `Zuletzt aktualisiert: ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})}`;
         
-        // Clear route line if fetching new board
         if (routePolyline) map.removeLayer(routePolyline);
     } catch (e) { document.getElementById('updateTime').innerText = "Verbindungsfehler..."; }
 }
 
-// ADVANCED TRAIN DETAILS
+// HORIZONTAL SBB TIMELINE MODAL
 window.showTrainDetails = function(index) {
     const train = globalBoardData[index];
     if (!train) return;
@@ -145,19 +179,18 @@ window.showTrainDetails = function(index) {
     const badge = (train.category + " " + train.number).trim();
     document.getElementById('modalTrainName').innerText = `${badge} \u2192 ${train.to}`;
 
-    // Extract Extra Info (Operator, Travel Time)
+    // Extract Extra Info
     let extraInfo = [];
     if (train.operator) extraInfo.push(`Betreiber: <strong>${train.operator}</strong>`);
     
     // Status/Delays logic
     let statusHTML = '';
     const stop = train.stop || {};
-    if (stop.delay) statusHTML += `<div class="text-red">Verspätung: +${stop.delay} Min.</div>`;
+    if (stop.delay) statusHTML += `<div class="text-red">⚠️ Verspätung: +${stop.delay} Min.</div>`;
     if (stop.prognosis && stop.prognosis.platform && stop.platform && stop.prognosis.platform !== stop.platform) {
-        statusHTML += `<div class="text-red">Gleisänderung: Neu Gleis ${stop.prognosis.platform} (geplant ${stop.platform})</div>`;
+        statusHTML += `<div class="text-red">⚠️ Gleisänderung: Neu Gleis ${stop.prognosis.platform} (geplant ${stop.platform})</div>`;
     }
 
-    // Build Route Timeline & Collect Coordinates for the Map
     let routeHTML = '';
     let hasReachedCurrent = false;
     let mapCoords = [];
@@ -166,17 +199,14 @@ window.showTrainDetails = function(index) {
     (train.passList || []).forEach(pass => {
         if (!pass.station || !pass.station.name) return;
         
-        // Find out where we are in the journey
         let isCurrent = false;
         if (pass.station.name.toLowerCase().includes(currentViewedStation) || currentViewedStation.includes(pass.station.name.toLowerCase())) {
             hasReachedCurrent = true;
             isCurrent = true;
-            startTime = new Date(pass.departure || pass.arrival); // Track start time for duration
+            startTime = new Date(pass.departure || pass.arrival); 
         }
 
-        // Only process stops from current station onwards
         if (hasReachedCurrent) {
-            // Add to Map Coordinates if available
             if (pass.station.coordinate && pass.station.coordinate.x) {
                 mapCoords.push([pass.station.coordinate.x, pass.station.coordinate.y]);
             }
@@ -184,17 +214,17 @@ window.showTrainDetails = function(index) {
             const rawTime = pass.departure || pass.arrival;
             const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: use12h };
             if (timeZone !== 'local') timeOptions.timeZone = 'Europe/Zurich';
-            
             const timeStr = rawTime ? new Date(rawTime).toLocaleTimeString([], timeOptions) : '--:--';
             
+            // Build the horizontal slice
             routeHTML += `
-                <div class="route-step ${isCurrent ? 'current-station-highlight' : ''}">
-                    <div class="route-time">${timeStr} <br><span style="font-size: 0.8rem">${pass.delay ? `<span class="text-red">+${pass.delay}'</span>` : ''}</span></div>
-                    <div class="route-station">${pass.station.name}</div>
-                    <div class="route-plat">${pass.platform ? `Gl. ${pass.platform}` : ''}</div>
+                <div class="horiz-step ${isCurrent ? 'current-stop' : ''}">
+                    <div class="horiz-time">${timeStr} <br><span class="horiz-delay">${pass.delay ? `+${pass.delay}'` : ''}</span></div>
+                    <div class="horiz-node"></div>
+                    <div class="horiz-station">${pass.station.name}</div>
+                    <div class="horiz-plat">${pass.platform ? `Gl. ${pass.platform}` : ''}</div>
                 </div>`;
                 
-            // If it's the last stop, calculate duration
             if (pass === train.passList[train.passList.length - 1] && startTime && rawTime) {
                 let endTime = new Date(rawTime);
                 let durationMins = Math.round((endTime - startTime) / 60000);
@@ -203,24 +233,64 @@ window.showTrainDetails = function(index) {
         }
     });
 
-    // Finalize info box
     if (extraInfo.length > 0) statusHTML = `<div style="margin-bottom:10px; color:#ccc;">${extraInfo.join(' | ')}</div>` + statusHTML;
-    document.getElementById('modalTrainStatus').innerHTML = statusHTML || '<div style="color:#aaa">Pünktlich</div>';
-
+    document.getElementById('modalTrainStatus').innerHTML = statusHTML || '<div style="color:#aaa">Pünktlich unterwegs</div>';
+    document.getElementById('modalRouteList').innerHTML = routeHTML || '<div style="padding: 10px; color: #aaa; font-weight: bold; font-size: 1.2rem;">Fahrt endet hier. (Endstation)</div>';    
     // Draw Route on Map Behind the Modal
     if (routePolyline) map.removeLayer(routePolyline);
     if (mapCoords.length > 1) {
         routePolyline = L.polyline(mapCoords, {color: '#eb0000', weight: 4, opacity: 0.8}).addTo(map);
-        map.fitBounds(routePolyline.getBounds(), {padding: [20, 20]}); // Auto zoom map to fit route
+        map.fitBounds(routePolyline.getBounds(), {padding: [20, 20]}); 
     }
 
     document.getElementById('trainDetailsModal').style.display = 'flex';
 };
 
-document.addEventListener('DOMContentLoaded', () => { initMap(); runClock(); fetchBoard(); document.getElementById('entryInput').value = maxEntries; });
-setInterval(fetchBoard, 30000); setInterval(fetchWeather, 600000);
+// BACKGROUND POLLING FOR FAVORITE STATION ALERTS
+async function checkFavoriteAlerts() {
+    if (!notifsEnabled || Notification.permission !== 'granted') return;
+    let favs = JSON.parse(localStorage.getItem('favStations') || '[]');
+    if (favs.length === 0) return;
+
+    for (const station of favs) {
+        try {
+            const res = await fetch(`https://transport.opendata.ch/v1/stationboard?station=${encodeURIComponent(station)}&limit=5&type=departure`);
+            const data = await res.json();
+            if (!data.stationboard) continue;
+
+            data.stationboard.forEach(train => {
+                const stop = train.stop || {};
+                const trainId = train.name + train.to + stop.departure;
+
+                if (notifiedTrains.has(trainId)) return; // Don't spam the same train
+
+                let alertMsg = null;
+                if (stop.delay > 0) {
+                    alertMsg = `${train.name} nach ${train.to} hat +${stop.delay} Min. Verspätung.`;
+                }
+                if (stop.prognosis && stop.prognosis.platform && stop.platform && stop.prognosis.platform !== stop.platform) {
+                    alertMsg = (alertMsg ? alertMsg + "\n" : "") + `Gleisänderung: Neu Gl. ${stop.prognosis.platform} (statt ${stop.platform}).`;
+                }
+
+                if (alertMsg) {
+                    new Notification(`SBB Alarm: ${station}`, { body: alertMsg, icon: 'image.png' });
+                    notifiedTrains.add(trainId);
+                    if(notifiedTrains.size > 100) notifiedTrains.clear(); // clear memory safely
+                }
+            });
+        } catch(e) {}
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => { 
+    initMap(); runClock(); fetchBoard(); 
+    document.getElementById('entryInput').value = maxEntries; 
+});
+
+setInterval(fetchBoard, 30000); 
+setInterval(fetchWeather, 600000);
+setInterval(checkFavoriteAlerts, 120000); // Check favorites every 2 minutes
 
 if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js')
-      .then(() => console.log("Service Worker Registered"));
+    navigator.serviceWorker.register('./sw.js').then(() => console.log("Service Worker Registered"));
 }
