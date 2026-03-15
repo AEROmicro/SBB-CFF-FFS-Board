@@ -6,7 +6,7 @@ let use12h = localStorage.getItem('use12h') === 'true';
 let maxEntries = parseInt(localStorage.getItem('maxEntries')) || 15;
 let notifsEnabled = localStorage.getItem('notifsEnabled') === 'true';
 let currentCoords = { lat: 47.378177, lon: 8.540192 };
-let map, marker, routePolyline; 
+let map, marker, routePolyline;
 let notifiedTrains = new Set(); // Prevent spamming notifications
 
 function initMap() {
@@ -40,9 +40,9 @@ function runClock() {
 }
 
 // UI Settings
-function openSettings() { 
-    document.getElementById('settingsOverlay').style.display = 'flex'; 
-    renderFavorites(); 
+function openSettings() {
+    document.getElementById('settingsOverlay').style.display = 'flex';
+    renderFavorites();
     updateNotifButtons();
 }
 function closeSettings() { document.getElementById('settingsOverlay').style.display = 'none'; }
@@ -94,8 +94,8 @@ function removeFavorite(name) {
 function renderFavorites() {
     let favs = JSON.parse(localStorage.getItem('favStations') || '[]');
     document.getElementById('favListContainer').innerHTML = favs.length ? favs.map(f => `
-        <div class="fav-item"><span onclick="selectStation('${f}'); closeSettings();">${f}</span>
-        <div class="fav-del" onclick="removeFavorite('${f}')">x</div></div>`).join('') : '<div style="padding:10px">No favorites</div>';
+    <div class="fav-item"><span onclick="selectStation('${f}'); closeSettings();">${f}</span>
+    <div class="fav-del" onclick="removeFavorite('${f}')">x</div></div>`).join('') : '<div style="padding:10px">No favorites</div>';
 }
 
 async function fetchWeather() {
@@ -128,7 +128,7 @@ async function fetchBoard() {
     try {
         const res = await fetch(`https://transport.opendata.ch/v1/stationboard?station=${encodeURIComponent(stationQuery)}&limit=${maxEntries}&type=departure`);
         const data = await res.json();
-        
+
         globalBoardData = data.stationboard || [];
 
         if (data.station) {
@@ -151,39 +151,50 @@ async function fetchBoard() {
             if (!train.stop || !train.stop.departure) return;
             let depTime = new Date(train.stop.departure);
             let timeStr = depTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: use12h, timeZone: timeZone !== 'local' ? 'Europe/Zurich' : undefined });
-            
+
             const badge = (train.category + (train.number !== null ? train.number : "")) || "Zug";
             let dest = train.to || badge;
             const viaList = (train.passList || []).slice(1, 4).map(p => p.station.name).filter(n => n && n !== dest);
             const lineClass = train.category === 'IR' ? 'line-IR' : (train.category === 'IC' ? 'line-IC' : 'line-S');
 
             newRows += `
-                <tr onclick="window.showTrainDetails(${index})">
-                    <td class="time-cell">${timeStr}${train.stop.delay ? `<span class="delay">+${train.stop.delay}′</span>` : ''}</td>
-                    <td class="dest-cell"><span class="line-badge ${lineClass}">${badge}</span>${dest}<div class="via-text">${viaList.length > 0 ? 'via ' + viaList.join(' - ') : ''}</div></td>
-                    <td style="text-align: right;"><span class="track-box">${train.stop.platform || ''}</span></td>
-                </tr>`;
+            <tr onclick="window.showTrainDetails(${index})">
+            <td class="time-cell">${timeStr}${train.stop.delay ? `<span class="delay">+${train.stop.delay}′</span>` : ''}</td>
+            <td class="dest-cell"><span class="line-badge ${lineClass}">${badge}</span>${dest}<div class="via-text">${viaList.length > 0 ? 'via ' + viaList.join(' - ') : ''}</div></td>
+            <td style="text-align: right;"><span class="track-box">${train.stop.platform || ''}</span></td>
+            </tr>`;
         });
         tbody.innerHTML = newRows;
         document.getElementById('updateTime').innerText = `Zuletzt aktualisiert: ${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})}`;
-        
+
     } catch (e) { document.getElementById('updateTime').innerText = "Verbindungsfehler..."; }
 }
 
+// --- NEW HELPER FUNCTION FOR OCCUPANCY ICONS ---
+function getOccupancyIcon(level) {
+    if (level === 1) return "👤";       // Low
+    if (level === 2) return "👤👤";     // Medium
+    if (level === 3) return "👤👤👤";   // High
+    return "-";
+}
+
 window.showTrainDetails = function(index) {
+    // --- NEW: HAPTIC FEEDBACK ---
+    if (navigator.vibrate) navigator.vibrate(20);
+
     const train = globalBoardData[index];
     if (!train) return;
 
     const currentViewedStation = document.getElementById('displayStation').innerText.toLowerCase();
-    
+
     // 1. Create the Badge (Fixing the 'null' issue and adding SBB styling)
     const badgeText = (train.category + (train.number !== null ? train.number : "")).trim();
     const lineClass = train.category === 'IR' ? 'line-IR' : (train.category === 'IC' ? 'line-IC' : 'line-S');
-    
+
     // 2. Update Header with the Badge and Larger Text (Arrow Removed)
     document.getElementById('modalTrainName').innerHTML = `
-        <span class="line-badge ${lineClass}">${badgeText}</span> 
-        <span style="vertical-align: middle; margin-left: 10px;">${train.to}</span>
+    <span class="line-badge ${lineClass}">${badgeText}</span>
+    <span style="vertical-align: middle; margin-left: 10px;">${train.to}</span>
     `;
 
     // --- NEW STUFF: Extract Stats & Specs Grid ---
@@ -202,7 +213,7 @@ window.showTrainDetails = function(index) {
     } else {
         statusTextHTML += `<div class="status-badge ontime-bg">Pünktlich</div>`;
     }
-    
+
     if (stop.prognosis && stop.prognosis.platform && stop.platform && stop.prognosis.platform !== stop.platform) {
         statusTextHTML += `<div class="status-badge track-bg">Gleisänderung: Gl. ${stop.prognosis.platform}</div>`;
     }
@@ -216,9 +227,9 @@ window.showTrainDetails = function(index) {
 
     (train.passList || []).forEach((pass, i) => {
         if (!pass.station || !pass.station.name) return;
-        
+
         let isCurrent = pass.station.name.toLowerCase().includes(currentViewedStation) || currentViewedStation.includes(pass.station.name.toLowerCase());
-        
+
         if (isCurrent) {
             hasReachedCurrent = true;
             startTime = new Date(pass.departure || pass.arrival);
@@ -232,17 +243,17 @@ window.showTrainDetails = function(index) {
             const rawTime = pass.departure || pass.arrival;
             const timeOptions = { hour: '2-digit', minute: '2-digit', hour12: use12h };
             if (timeZone !== 'local') timeOptions.timeZone = 'Europe/Zurich';
-            
+
             const timeStr = rawTime ? new Date(rawTime).toLocaleTimeString([], timeOptions) : '--:--';
-            
+
             routeHTML += `
-                <div class="horiz-step ${isCurrent ? 'current-stop' : ''}">
-                    <div class="horiz-time">${timeStr}${pass.delay ? `<br><span class="horiz-delay">+${pass.delay}'</span>` : ''}</div>
-                    <div class="horiz-node"></div>
-                    <div class="horiz-station">${pass.station.name}</div>
-                    <div class="horiz-plat">${pass.platform ? `Gl. ${pass.platform}` : ''}</div>
-                </div>`;
-                
+            <div class="horiz-step ${isCurrent ? 'current-stop' : ''}">
+            <div class="horiz-time">${timeStr}${pass.delay ? `<br><span class="horiz-delay">+${pass.delay}'</span>` : ''}</div>
+            <div class="horiz-node"></div>
+            <div class="horiz-station">${pass.station.name}</div>
+            <div class="horiz-plat">${pass.platform ? `Gl. ${pass.platform}` : ''}</div>
+            </div>`;
+
             if (i === train.passList.length - 1 && startTime && rawTime) {
                 let durationMins = Math.round((new Date(rawTime) - startTime) / 60000);
                 if (durationMins > 0) extraInfo.push(`Dauer: <strong>${durationMins} Min.</strong>`);
@@ -251,10 +262,23 @@ window.showTrainDetails = function(index) {
     });
 
     document.querySelector('.route-list-wrapper').innerHTML = routeHTML;
-    
+
+    // --- NEW: Add Occupancy Info (if available from API) ---
+    if (train.capacity1st || train.capacity2nd) {
+        let cap1 = train.capacity1st ? getOccupancyIcon(train.capacity1st) : '-';
+        let cap2 = train.capacity2nd ? getOccupancyIcon(train.capacity2nd) : '-';
+        extraInfo.push(`Auslastung: 1. Kl. <strong>${cap1}</strong> / 2. Kl. <strong>${cap2}</strong>`);
+    }
+
+    // --- NEW: Add Total Number of Stops Info ---
+    if (train.passList && train.passList.length > 0) {
+        let stopsCount = train.passList.length - 1;
+        extraInfo.push(`Haltestellen: <strong>${stopsCount}</strong>`);
+    }
+
     // Prepend the Duration (Dauer) to the status line if it exists
     let durationLine = extraInfo.length > 0 ? `<div style="margin-bottom:10px; color:#ccc; font-size: 0.9rem;">${extraInfo.join(' | ')}</div>` : '';
-    
+
     // Final assembly of the info section
     document.getElementById('modalTrainStatus').innerHTML = statsHTML + durationLine + statusTextHTML;
 
@@ -277,7 +301,7 @@ async function checkFavoriteAlerts() {
                 const stop = train.stop || {};
                 const trainId = train.name + train.to + stop.departure;
 
-                if (notifiedTrains.has(trainId)) return; 
+                if (notifiedTrains.has(trainId)) return;
 
                 let alertMsg = null;
                 if (stop.delay > 0) {
@@ -290,21 +314,21 @@ async function checkFavoriteAlerts() {
                 if (alertMsg) {
                     new Notification(`SBB Alarm: ${station}`, { body: alertMsg, icon: 'image.png' });
                     notifiedTrains.add(trainId);
-                    if(notifiedTrains.size > 100) notifiedTrains.clear(); 
+                    if(notifiedTrains.size > 100) notifiedTrains.clear();
                 }
             });
         } catch(e) {}
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => { 
-    initMap(); runClock(); fetchBoard(); 
-    document.getElementById('entryInput').value = maxEntries; 
+document.addEventListener('DOMContentLoaded', () => {
+    initMap(); runClock(); fetchBoard();
+    document.getElementById('entryInput').value = maxEntries;
 });
 
-setInterval(fetchBoard, 30000); 
+setInterval(fetchBoard, 30000);
 setInterval(fetchWeather, 600000);
-setInterval(checkFavoriteAlerts, 120000); 
+setInterval(checkFavoriteAlerts, 120000);
 
 if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js').then(() => console.log("Service Worker Registered"));
