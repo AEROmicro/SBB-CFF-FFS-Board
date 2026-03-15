@@ -172,7 +172,7 @@ button.update-btn:hover, button.util-btn:hover { background: var(--sbb-red); col
 
 .horiz-station {
     position: absolute;
-    top: 75px;
+    top: 55px;
     left: 50%;
     transform: rotate(45deg);
     transform-origin: top left;
