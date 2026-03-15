@@ -19,7 +19,7 @@
             <div style="display:flex; align-items:center;">
                 <div class="logo-stack">
                     <div class="sbb-logo-text">SBB CFF FFS</div>
-                    <div class="header-version">V9 ZERMATT</div>
+                    <div class="header-version">V10 CHUR</div>
                 </div>
 
                 <div class="station-container">
@@ -40,9 +40,9 @@
         <table>
             <thead>
                 <tr>
-                    <th style="width: 15%;">Abfahrt</th>
-                    <th style="width: 70%;">Linie / Ziel</th>
-                    <th style="width: 15%; text-align: right;">Gleis</th>
+                    <th data-i18n="departure">ABFAHRT</th>
+                    <th data-i18n="destination">LINIE / ZIEL</th>
+                    <th style="text-align: right;" data-i18n="track">GLEIS</th>
                 </tr>
             </thead>
             <tbody id="boardBody"></tbody>
@@ -63,63 +63,63 @@
 
         <div class="copyright">
             <a href="https://sites.google.com/view/aeroforge/" target="_blank" rel="noopener noreferrer">© ÆROforge 2026</a><br>
-            <br>Version 9 Zermatt<br>
+            <br>Version 10 Chur<br>
             All station data and SBB branding used under official terms.<br>
             Licensed under GNU GPLv3.
         </div>
     </div>
 
-    <div id="settingsOverlay">
+    <div id="settingsOverlay" class="overlay-modal" onclick="if(event.target == this) closeSettings()">
         <div class="settings-content">
             <div class="modal-header">
-                <h2>Settings</h2>
-                <span class="close-btn" onclick="closeSettings()">&times;</span>
+                <h2 data-i18n="settings">Settings</h2>
+                <div class="close-btn" onclick="closeSettings()">&times;</div>
             </div>
 
             <div class="setting-row">
-                <label>Temperature Unit:</label>
+                <label data-i18n="language">Language</label>
+                <select id="langSelect" onchange="setLanguage(this.value)" style="padding: 10px; background: #333; color: white; border: 1px solid #444; border-radius: 4px;">
+                    <option value="de">Deutsch</option>
+                    <option value="en">English</option>
+                    <option value="fr">Français</option>
+                    <option value="it">Italiano</option>
+                    <option value="rm">Rumantsch</option>
+                </select>
+            </div>
+
+            <div class="setting-row">
+                <label data-i18n="maxEntries">Max Entries:</label>
+                <input type="number" id="entryInput" onchange="updateEntryCount(this.value)" min="1" max="50" style="padding:10px; background:#333; color:white; border:1px solid #444; border-radius:4px;">
+            </div>
+
+            <div class="setting-row">
+                <label data-i18n="tempUnit">Temperature Unit:</label>
                 <div style="display:flex; gap:10px;">
-                    <button class="util-btn" style="flex:1" onclick="setTempUnit('C')">Celsius</button>
-                    <button class="util-btn" style="flex:1" onclick="setTempUnit('F')">Fahrenheit</button>
+                    <button class="util-btn" style="flex:1" onclick="setTempUnit('C')">°C</button>
+                    <button class="util-btn" style="flex:1" onclick="setTempUnit('F')">°F</button>
                 </div>
             </div>
 
             <div class="setting-row">
-                <label>Time Format:</label>
+                <label data-i18n="timeZoneLabel">Timezone:</label>
                 <div style="display:flex; gap:10px;">
-                    <button class="util-btn" style="flex:1" onclick="setTimeFormat(false)">24h</button>
-                    <button class="util-btn" style="flex:1" onclick="setTimeFormat(true)">12h</button>
+                    <button class="util-btn" style="flex:1" onclick="setTimeZone('local')" data-i18n="local">Local</button>
+                    <button class="util-btn" style="flex:1" onclick="setTimeZone('Europe/Zurich')" data-i18n="swiss">Swiss</button>
                 </div>
             </div>
 
             <div class="setting-row">
-                <label>Max Entries:</label>
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <input type="number" id="entryInput" style="flex:1; padding: 10px;" value="15" onchange="updateEntryCount(this.value)">
-                </div>
-            </div>
-
-            <div class="setting-row">
-                <label>Time Zone:</label>
+                <label data-i18n="alerts">Alerts (Favorites):</label>
                 <div style="display:flex; gap:10px;">
-                    <button class="util-btn" style="flex:1" onclick="setTimeZone('local')">Local</button>
-                    <button class="util-btn" style="flex:1" onclick="setTimeZone('Europe/Zurich')">Swiss</button>
+                    <button class="util-btn" id="notifBtnOn" style="flex:1" onclick="setNotifications(true)" data-i18n="on">On</button>
+                    <button class="util-btn" id="notifBtnOff" style="flex:1" onclick="setNotifications(false)" data-i18n="off">Off</button>
                 </div>
             </div>
 
             <div class="setting-row">
-                <label>Alerts (Favorites):</label>
-                <div style="display:flex; gap:10px;">
-                    <button class="util-btn" id="notifBtnOn" style="flex:1" onclick="setNotifications(true)">On</button>
-                    <button class="util-btn" id="notifBtnOff" style="flex:1" onclick="setNotifications(false)">Off</button>
-                </div>
-            </div>
-
-            <div class="setting-row">
-                <label>Favorites:</label>
+                <label data-i18n="favoritesLabel">Favorites:</label>
                 <div class="fav-list" id="favListContainer"></div>
             </div>
-
         </div>
     </div>
 
