@@ -17,12 +17,17 @@
     <div class="board">
         <div class="header">
             <div style="display:flex; align-items:center;">
-                <div class="sbb-logo-text">SBB CFF FFS</div>
+                <div class="logo-stack">
+                    <div class="sbb-logo-text">SBB CFF FFS</div>
+                    <div class="header-version">V8 NEUCHÂTEL</div>
+                </div>
+
                 <div class="station-container">
                     <div class="station-name" id="displayStation">Zürich HB</div>
                     <div class="temp-header" id="tempDisplay">--°C</div>
                 </div>
             </div>
+
             <div class="clock-face">
                 <div id="markers"></div>
                 <div class="hand hour-hand" id="hourHand"></div>
@@ -31,7 +36,7 @@
             </div>
         </div>
 
-        <div id="map"></div> 
+        <div id="map"></div>
         <table>
             <thead>
                 <tr>
@@ -70,7 +75,7 @@
                 <h2>Settings</h2>
                 <span class="close-btn" onclick="closeSettings()">&times;</span>
             </div>
-            
+
             <div class="setting-row">
                 <label>Temperature Unit:</label>
                 <div style="display:flex; gap:10px;">
@@ -114,7 +119,7 @@
                 <label>Favorites:</label>
                 <div class="fav-list" id="favListContainer"></div>
             </div>
-            
+
         </div>
     </div>
 
