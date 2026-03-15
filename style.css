@@ -96,22 +96,22 @@ button.update-btn:hover, button.util-btn:hover { background: var(--sbb-red); col
 
 /* FULL-WIDTH REFINED AUTOMATIC TIMELINE WRAPPER */
 .route-list-wrapper {
-    display: flex;
-    overflow-x: auto;
+    display: flex; 
+    overflow-x: auto; 
     overflow-y: hidden;
-    padding: 20px 0 180px 0;
+    padding: 20px 0 180px 0; 
     position: relative;
-    scrollbar-width: thin;
-    scrollbar-color: var(--sbb-red) #333;
     flex-grow: 1;
-    mask-image: linear-gradient(to right, black 0%, black 100%);
+    /* Webkit touch scrolling makes it feel like a real app on iPhone */
+    -webkit-overflow-scrolling: touch; 
 
-    /* --- ADJUST THE LINE POSITION HERE --- */
-    background: linear-gradient(to bottom,
-                                transparent 52px,
-                                var(--sbb-blue) 52.5px, /* Added a 0.5px buffer for mobile scaling */
-                                var(--sbb-blue) 57.5px,
-                                transparent 58px
+    /* Use percentages instead of PX for the line */
+    /* The Blue Line */
+    background: linear-gradient(to bottom, 
+        transparent 54px, 
+        var(--sbb-blue) 54px, 
+        var(--sbb-blue) 60px, 
+        transparent 60px
     );
     background-repeat: repeat-x;
 }
@@ -158,21 +158,37 @@ button.update-btn:hover, button.util-btn:hover { background: var(--sbb-red); col
 
 /* The dot on the line */
 .horiz-node {
-    width: 14px; height: 14px; background: white; border: 3px solid var(--sbb-blue); border-radius: 50%;
-    margin-top: 5px; margin-bottom: 15px;
-    flex-shrink: 0;
+    width: 16px; 
+    height: 16px; 
+    background: white; 
+    border: 3px solid var(--sbb-blue); 
+    border-radius: 50%;
+    /* Aligning specifically to the 54px-60px slot */
+    margin-top: 8px; 
+    margin-bottom: 15px;
     z-index: 3;
     position: relative;
+    flex-shrink: 0; /* Prevents the circle from turning into an oval on mobile */
+    box-sizing: border-box;
 }
+
+/* Red Current Node (18px height) */
 .horiz-step.current-stop .horiz-node {
-    background: var(--sbb-red); border-color: var(--sbb-red); box-shadow: 0 0 10px var(--sbb-red);
-    width: 18px; height: 18px; margin-top: 3px; margin-bottom: 13px;
+    background: var(--sbb-red); 
+    border-color: var(--sbb-red); 
+    box-shadow: 0 0 10px var(--sbb-red);
+    width: 18px; 
+    height: 18px; 
+    /* (Center 55) - (Half Height 9) = 46px from container top */
+    /* Account for the 20px padding-top -> 26px margin */
+    margin-top: 26px; 
+    margin-bottom: 13px;
     flex-shrink: 0;
 }
 
 .horiz-station {
     position: absolute;
-    top: 55px;
+    top: 65px;
     left: 50%;
     transform: rotate(45deg);
     transform-origin: top left;
